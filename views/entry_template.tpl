@@ -2,10 +2,11 @@
 <html
 <head>
 <title>
-Create a new post
+Blog Post
 </title>
 </head>
 <body>
+<a href="/blog">Blog Home</a><br><br>
 
 {{mdate}}
 <h2>{{title}}</h2>

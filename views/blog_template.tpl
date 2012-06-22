@@ -9,7 +9,7 @@
 
 %for post in myposts:
 {{post['post_date']}}
-<h2>{{post['title']}}</h2>
+<h2><a href="/blog/post/{{post['permalink']}}">{{post['title']}}</a></h2>
 <hr>
 {{post['content']}}
 <p>
