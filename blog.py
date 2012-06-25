@@ -109,6 +109,30 @@ def present_signup():
                                 email="", username_error="", email_error="",
                                 verify_error =""))
 
+@bottle.get('/blog/login')
+def present_login():
+    return bottle.template("login", 
+                           dict(username="", password="", 
+                                login_error=""))
+
+@bottle.post('/blog/login')
+def process_login():
+    username = bottle.request.forms.get("username")
+    password = bottle.request.forms.get("password")
+    userRecord = {}
+    if (user.validate_login(username, password, userRecord)):
+        session_id = user.start_session(userRecord['user_id'])
+        cookie = user.make_secure(int(session_id))
+        bottle.response.set_cookie("session", cookie)
+
+        bottle.redirect("/blog/welcome")
+
+    else:
+        return bottle.template("login", 
+                           dict(username=cgi.escape(username), password="", 
+                                login_error="Invalid Login"))
+    
+
 @bottle.post('/blog/signup')
 def process_signup():
     email = bottle.request.forms.get("email")

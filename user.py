@@ -33,6 +33,12 @@ def validate_signup(username, password, verify, email, errors):
     # looks good
     return True
 
+# validates the login
+def validate_login(username, password, user_record):
+
+    
+
+
 
 # Implement the hash_str function to use HMAC and our SECRET instead of md5
 SECRET = 'verysecret'
