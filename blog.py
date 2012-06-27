@@ -121,8 +121,8 @@ def process_login():
     password = bottle.request.forms.get("password")
     userRecord = {}
     if (user.validate_login(username, password, userRecord)):
-        session_id = user.start_session(userRecord['user_id'])
-        cookie = user.make_secure(int(session_id))
+        session_id = user.start_session(userRecord['uid'])
+        cookie = user.make_secure_val(str(int(session_id)))
         bottle.response.set_cookie("session", cookie)
 
         bottle.redirect("/blog/welcome")
@@ -143,9 +143,15 @@ def process_signup():
     # set these up in case we have an error case
     errors = {'username':cgi.escape(username), 'email':cgi.escape(email)}
     if (user.validate_signup(username, password, verify, email, errors)):
-        #user.newuser(username, password, email)
-        cookie= user.make_secure_val(username)
-        bottle.response.set_cookie("username",cookie)
+        uid = user.newuser(username, password, email)
+        if (uid == None):
+            # this was a duplicate
+            errors['username_error'] = "Username already in use. Please choose another"
+            return bottle.template("signup", errors)
+            
+        session_id = user.start_session(uid)
+        cookie= user.make_secure_val(str(int(session_id)))
+        bottle.response.set_cookie("session",cookie)
         bottle.redirect("/blog/welcome")
     else:
         return bottle.template("signup", errors)
@@ -155,18 +161,38 @@ def process_signup():
 def present_welcome():
     # check for a cookie, if present, then extract value
 
-    cookie = bottle.request.get_cookie("username")
+    cookie = bottle.request.get_cookie("session")
 
-    username = user.check_secure_val(cookie)
+    if (cookie == None):
+        print "no cookie..."
+        bottle.redirect("/blog/signup")
 
-    if (username == None):
-        username = "Stranger"
-    
+    else:
+        session_id = user.check_secure_val(cookie)
+
+        if (session_id == None):
+            print "no secure session_id"
+            bottle.redirect("/blog/signup")
+            
+        else:
+            # look up username record
+            session = user.get_session(session_id)
+            
+            if (session == None):
+                print "no valid session"
+                bottle.redirect("/blog/signup")
+
+            username = user.uid_to_username(session['uid'])
+        
+            if username == None:
+                print "Database error looking up uid"
+                bottle.redirect("/blog/signup")
+
     return bottle.template("welcome", {'username':username})
 
 
 bottle.debug(True)
-#bottle.run(host='ec2-174-129-129-215.compute-1.amazonaws.com', port=8082)
-bottle.run(host='localhost', port=8082)
+bottle.run(host='ec2-174-129-129-215.compute-1.amazonaws.com', port=8082)
+#bottle.run(host='localhost', port=8082)
 
 
