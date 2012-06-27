@@ -131,6 +131,36 @@ def process_login():
         return bottle.template("login", 
                            dict(username=cgi.escape(username), password="", 
                                 login_error="Invalid Login"))
+
+@bottle.get('/blog/logout')
+def process_logout():
+    cookie = bottle.request.get_cookie("session")
+
+    if (cookie == None):
+        print "no cookie..."
+        bottle.redirect("/blog/signup")
+
+    else:
+        session_id = user.check_secure_val(cookie)
+
+        if (session_id == None):
+            print "no secure session_id"
+            bottle.redirect("/blog/signup")
+            
+        else:
+            # remove the session
+
+            user.end_session(session_id)
+
+            print "clearing the cookie"
+
+            bottle.response.set_cookie("session",";Path=\/")
+
+
+            bottle.redirect("/blog/signup")
+
+
+    
     
 
 @bottle.post('/blog/signup')
