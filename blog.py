@@ -8,6 +8,7 @@ import datetime
 import random
 import hmac
 import user
+import json
 
 # inserts the blog entry and returns a permalink for the entry
 def insert_entry(title, post):
@@ -53,6 +54,23 @@ def blog_index():
         l.append({'title':post['title'], 'content':post['post'], 'post_date':post['date'], 'permalink':post['permalink']})
     return bottle.template('blog_template', dict(myposts=l))
 
+@bottle.route('/blog/.json')
+def blog_index_json():
+    connection = Connection("mongodb://production:10gen@staff.mongohq.com:10038/erlichson")
+    db = connection.erlichson
+    posts = db.posts
+
+    cur = posts.find().sort('date', direction=-1)
+    l=[]
+    for post in cur:
+        mydate = post['date']
+        dates = mydate.strftime("%A, %d. %B %Y %I:%M%p")
+        l.append({'subject':post['title'], 'content':post['post'], 'created':dates})
+
+    bottle.response.content_type = "application/json"
+
+    return json.dumps(l)
+
 
 @bottle.get("/blog/post/<permalink>")
 @bottle.view('entry_template')
@@ -71,6 +89,31 @@ def show_post(permalink="notfound"):
     print "date of entry is ", post['date']
 
     return dict(mdate=post['date'],title=post['title'], content=post['post'])
+
+@bottle.route("/blog/post/<permalink>/.json")
+def show_post_json(permalink="notfound"):
+    connection = Connection("mongodb://production:10gen@staff.mongohq.com:10038/erlichson")
+    db = connection.erlichson
+    posts = db.posts
+
+    permalink = cgi.escape(permalink)
+
+    print "about to quer on permalink = ", permalink
+    post = posts.find_one({'permalink':permalink})
+    if post == None:
+        bottle.redirect("/blog/post_not_found")
+
+    
+    mydate = post['date']
+    dates = mydate.strftime("%A, %d. %B %Y %I:%M%p")
+    
+    post = dict(subject=post['title'], content=post['post'], created=dates)
+    bottle.response.content_type = "application/json"
+
+    return json.dumps(post)
+    
+
+
         
     
 @bottle.get("/blog/post_not_found")
@@ -222,7 +265,7 @@ def present_welcome():
 
 
 bottle.debug(True)
-bottle.run(host='ec2-174-129-129-215.compute-1.amazonaws.com', port=8082)
-#bottle.run(host='localhost', port=8082)
+#bottle.run(host='ec2-174-129-129-215.compute-1.amazonaws.com', port=8082)
+bottle.run(host='localhost', port=8082)
 
 
